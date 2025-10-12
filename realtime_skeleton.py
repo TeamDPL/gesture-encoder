@@ -2,7 +2,7 @@
 import cv2
 import time
 import mediapipe as mp
-
+ 
 # ===== 설정 =====
 CAMERA_INDEX = 0
 FRAME_WIDTH, FRAME_HEIGHT = 1280, 720

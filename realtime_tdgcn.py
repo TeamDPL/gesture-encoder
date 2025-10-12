@@ -18,7 +18,7 @@ CONFIG_YAML = os.path.join(TDGCN_REPO, "config", "dhg14-28", "DHG14-28.yaml")  #
 WEIGHTS_PATH = os.path.join(TDGCN_REPO, "checkpoints", "DHG", "DHG14label", "Sub3_j.pt")  # 체크포인트 경로
 SEQ_LEN = 64            # TD-GCN 입력 길이(T)
 PRINT_INTERVAL = 1.0    # 초(피처 출력 주기)
-USE_GPU = torch.cuda.is_available()
+USE_GPU = torch.cuda.is_available() 
 
 # ========= MediaPipe & 시각화 =========
 CAMERA_INDEX = 0
