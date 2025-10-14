@@ -5,8 +5,7 @@ import time
 import yaml
 import math
 import numpy as np
-from collections import deque
-
+from collections import deque 
 import cv2
 import torch
 import torch.nn as nn
