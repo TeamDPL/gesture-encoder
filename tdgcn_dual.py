@@ -8,7 +8,9 @@ import numpy as np
 from collections import deque, Counter
 import cv2, torch
 import torch.nn as nn
-import mediapipe as mp
+import cv2, torch
+import torch.nn as nn
+# import mediapipe as mp # Moved to main
 
 # ========= 사용자 설정 =========
 TDGCN_REPO   = os.path.expanduser("./TD-GCN-Gesture")
@@ -32,10 +34,6 @@ CAMERA_INDEX = 0
 FRAME_W, FRAME_H = 1280, 720
 MIN_DET_CONF, MIN_TRK_CONF = 0.5, 0.5
 FONT = cv2.FONT_HERSHEY_SIMPLEX
-
-mp_hands = mp.solutions.hands
-mp_draw = mp.solutions.drawing_utils
-mp_styles = mp.solutions.drawing_styles
 
 # ========= 유틸: MediaPipe 21 → DHG/SHREC 22 매핑 =========
 def mediapipe21_to_dhg22(xyz21):
@@ -119,6 +117,11 @@ def main():
     cap = cv2.VideoCapture(CAMERA_INDEX)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_W)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_H)
+
+    import mediapipe as mp
+    mp_hands = mp.solutions.hands
+    mp_draw = mp.solutions.drawing_utils
+    mp_styles = mp.solutions.drawing_styles
 
     hands = mp_hands.Hands(
         static_image_mode=False, max_num_hands=2, model_complexity=1,
@@ -248,6 +251,25 @@ def main():
         hands.close()
         cap.release()
         cv2.destroyAllWindows()
+
+class TDGCN_Dual_Encoder(nn.Module):
+    def __init__(self, device):
+        super().__init__()
+        self.model, self.feature_blob, _ = build_tdgcn_and_load(WEIGHTS_PATH, CONFIG_YAML, device)
+        self.device = device
+
+    def forward(self, x):
+        # x: (B, C, T, J, 1)
+        # TDGCN expects (B, C, T, J, 1) or similar. 
+        # The original code uses to_tdgcn_input which produces (1,3,T,22,1).
+        # Here we assume batch input.
+        logits = self.model(x)
+        if self.feature_blob["feat"] is not None:
+            return self.feature_blob["feat"]
+        return logits
+
+def get_encoder(device):
+    return TDGCN_Dual_Encoder(device)
 
 if __name__ == "__main__":
     main()

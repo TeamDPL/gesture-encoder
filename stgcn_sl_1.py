@@ -4,7 +4,9 @@ import numpy as np
 from pathlib import Path
 import cv2, torch
 import torch.nn as nn
-import mediapipe as mp
+import cv2, torch
+import torch.nn as nn
+# import mediapipe as mp
 
 # ===== Paths =====
 SCRIPT_DIR     = Path(__file__).resolve().parent
@@ -43,9 +45,9 @@ def _stub_skvideo():
 _stub_skvideo()
 
 # ===== MediaPipe =====
-mp_hands  = mp.solutions.hands
-mp_draw   = mp.solutions.drawing_utils
-mp_styles = mp.solutions.drawing_styles
+# mp_hands  = mp.solutions.hands
+# mp_draw   = mp.solutions.drawing_utils
+# mp_styles = mp.solutions.drawing_styles
 
 # ===== helpers =====
 def extract_xyz21(hl, w, h):
@@ -114,70 +116,115 @@ else:
 
 label_map = cfg.get("label_map", None)
 
-# ===== run =====
-cap = cv2.VideoCapture(CAMERA_INDEX)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_W)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_H)
+def main():
+    # ===== run =====
+    cap = cv2.VideoCapture(CAMERA_INDEX)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_W)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_H)
 
-hands = mp_hands.Hands(
-    static_image_mode=False, max_num_hands=2, model_complexity=1,
-    min_detection_confidence=MIN_DET_CONF, min_tracking_confidence=MIN_TRK_CONF
-)
+    import mediapipe as mp
+    mp_hands  = mp.solutions.hands
+    mp_draw   = mp.solutions.drawing_utils
+    mp_styles = mp.solutions.drawing_styles
 
-device = torch.device("cuda" if USE_GPU else "cpu")
-prev_t = time.time()
-try:
-    while True:
-        ok, frame = cap.read()
-        if not ok: break
-        h, w = frame.shape[:2]
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        rgb.flags.writeable = False
-        results = hands.process(rgb)
-        rgb.flags.writeable = True
-        out = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+    hands = mp_hands.Hands(
+        static_image_mode=False, max_num_hands=2, model_complexity=1,
+        min_detection_confidence=MIN_DET_CONF, min_tracking_confidence=MIN_TRK_CONF
+    )
 
-        # draw
-        if results.multi_hand_landmarks:
-            for hl in results.multi_hand_landmarks:
-                mp_draw.draw_landmarks(
-                    out, hl, mp_hands.HAND_CONNECTIONS,
-                    mp_styles.get_default_hand_landmarks_style(),
-                    mp_styles.get_default_hand_connections_style()
-                )
+    device = torch.device("cuda" if USE_GPU else "cpu")
+    prev_t = time.time()
+    try:
+        while True:
+            ok, frame = cap.read()
+            if not ok: break
+            h, w = frame.shape[:2]
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            rgb.flags.writeable = False
+            results = hands.process(rgb)
+            rgb.flags.writeable = True
+            out = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
 
-        # single-hand frame → adapt to expected_V
-        hl = pick_single_hand(results)
-        xyz21 = normalize_xyz21(extract_xyz21(hl, w, h))
-        if expected_V > 21:
-            pad = np.zeros((expected_V-21, 3), np.float32)
-            xyzV = np.concatenate([xyz21, pad], axis=0)
-        else:
-            xyzV = xyz21[:expected_V, :]
+            # draw
+            if results.multi_hand_landmarks:
+                for hl in results.multi_hand_landmarks:
+                    mp_draw.draw_landmarks(
+                        out, hl, mp_hands.HAND_CONNECTIONS,
+                        mp_styles.get_default_hand_landmarks_style(),
+                        mp_styles.get_default_hand_connections_style()
+                    )
 
-        # infer (T=1)
-        x = to_tensor_T1(xyzV).to(device)           # (1,3,1,V,1)
-        with torch.no_grad():
-            logits = model(x)
-            probs = torch.softmax(logits, dim=1).cpu().numpy()[0]
-        top1 = int(np.argmax(probs))
-        conf = float(probs[top1])
-        cls_name = str(top1)
-        if isinstance(label_map, dict):
-            cls_name = label_map.get(top1, label_map.get(str(top1), str(top1)))
+            # single-hand frame → adapt to expected_V
+            hl = pick_single_hand(results)
+            xyz21 = normalize_xyz21(extract_xyz21(hl, w, h))
+            if expected_V > 21:
+                pad = np.zeros((expected_V-21, 3), np.float32)
+                xyzV = np.concatenate([xyz21, pad], axis=0)
+            else:
+                xyzV = xyz21[:expected_V, :]
 
-        # FPS
-        now = time.time()
-        fps = 1.0 / (now - prev_t + 1e-9)
-        prev_t = now
+            # infer (T=1)
+            x = to_tensor_T1(xyzV).to(device)           # (1,3,1,V,1)
+            with torch.no_grad():
+                logits = model(x)
+                probs = torch.softmax(logits, dim=1).cpu().numpy()[0]
+            top1 = int(np.argmax(probs))
+            conf = float(probs[top1])
+            cls_name = str(top1)
+            if isinstance(label_map, dict):
+                cls_name = label_map.get(top1, label_map.get(str(top1), str(top1)))
 
-        # overlay
-        cv2.putText(out, f"{cls_name}  p={conf:.2f}  FPS={fps:.1f}", (12, 36),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
-        cv2.putText(out, f"V={expected_V}, T=1", (12, 70),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,255), 2, cv2.LINE_AA)
+            # FPS
+            now = time.time()
+            fps = 1.0 / (now - prev_t + 1e-9)
+            prev_t = now
 
-        cv2.imshow("ST-GCN-SL Single-frame (q to quit)", out)
-        if (cv2.waitKey(1) & 0xFF) == ord('q'): break
-finally:
-    hands.close(); cap.release(); cv2.destroyAllWindows()
+            # overlay
+            cv2.putText(out, f"{cls_name}  p={conf:.2f}  FPS={fps:.1f}", (12, 36),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
+            cv2.putText(out, f"V={expected_V}, T=1", (12, 70),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,255), 2, cv2.LINE_AA)
+
+            cv2.imshow("ST-GCN-SL Single-frame (q to quit)", out)
+            if (cv2.waitKey(1) & 0xFF) == ord('q'): break
+    finally:
+        hands.close(); cap.release(); cv2.destroyAllWindows()
+
+class STGCN_SL_1_Encoder(nn.Module):
+    def __init__(self, device):
+        super().__init__()
+        # Load model logic copied from script body
+        with open(CONFIG_YAML, "r") as f:
+            cfg = yaml.safe_load(f)
+        mod = importlib.import_module("net.st_gcn")
+        ModelClass = getattr(mod, "Model", None) or getattr(mod, "STGCN")
+        self.model = ModelClass(**cfg.get("model_args", {}))
+        try:
+            ckpt = torch.load(str(WEIGHTS_PATH), map_location="cpu", weights_only=True)
+        except TypeError:
+            ckpt = torch.load(str(WEIGHTS_PATH), map_location="cpu")
+        state = ckpt.get("model_state_dict", ckpt.get("state_dict", ckpt))
+        self.model.load_state_dict(state, strict=False)
+        self.model.eval().to(device)
+        self.device = device
+
+        self.feature_blob = {"feat": None}
+        last_fc = None
+        for m in self.model.modules():
+            if isinstance(m, nn.Linear): last_fc = m
+        if last_fc:
+            def _hook(module, inputs): self.feature_blob["feat"] = inputs[0]
+            last_fc.register_forward_pre_hook(_hook)
+
+    def forward(self, x):
+        # x: (B, 3, 1, V, 1)
+        logits = self.model(x)
+        if self.feature_blob["feat"] is not None:
+            return self.feature_blob["feat"]
+        return logits
+
+def get_encoder(device):
+    return STGCN_SL_1_Encoder(device)
+
+if __name__ == "__main__":
+    main()

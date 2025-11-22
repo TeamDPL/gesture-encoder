@@ -10,7 +10,10 @@ from collections import deque
 import cv2
 import torch
 import torch.nn as nn
-import mediapipe as mp
+import torch
+import torch.nn as nn
+# import mediapipe as mp
+import types
 import types
 
 # ================== 경로/설정 ==================
@@ -59,9 +62,9 @@ def _stub_skvideo():
 _stub_skvideo()
 
 # ================== MediaPipe 준비 ==================
-mp_hands  = mp.solutions.hands
-mp_draw   = mp.solutions.drawing_utils
-mp_styles = mp.solutions.drawing_styles
+# mp_hands  = mp.solutions.hands
+# mp_draw   = mp.solutions.drawing_utils
+# mp_styles = mp.solutions.drawing_styles
 
 # ================== 유틸 (단손) ==================
 def extract_xyz21(landmarks, w, h):
@@ -186,6 +189,11 @@ def main():
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_W)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_H)
 
+    import mediapipe as mp
+    mp_hands  = mp.solutions.hands
+    mp_draw   = mp.solutions.drawing_utils
+    mp_styles = mp.solutions.drawing_styles
+
     hands = mp_hands.Hands(
         static_image_mode=False, max_num_hands=2, model_complexity=1,
         min_detection_confidence=MIN_DET_CONF, min_tracking_confidence=MIN_TRK_CONF
@@ -272,6 +280,33 @@ def main():
         hands.close()
         cap.release()
         cv2.destroyAllWindows()
+
+class STGCN_SL_64_Encoder(nn.Module):
+    def __init__(self, device):
+        super().__init__()
+        self.model, self.cfg = build_stgcn_sl_and_load(WEIGHTS_PATH, CONFIG_YAML, device)
+        self.device = device
+        
+        # Hook setup
+        self.feature_blob = {"feat": None}
+        last_linear = None
+        for m in self.model.modules():
+            if isinstance(m, nn.Linear):
+                last_linear = m
+        if last_linear:
+            def _hook(module, inputs):
+                self.feature_blob["feat"] = inputs[0] # Keep gradient if needed, or detach
+            last_linear.register_forward_pre_hook(_hook)
+
+    def forward(self, x):
+        # x: (B, 3, T, V, 1)
+        logits = self.model(x)
+        if self.feature_blob["feat"] is not None:
+            return self.feature_blob["feat"]
+        return logits
+
+def get_encoder(device):
+    return STGCN_SL_64_Encoder(device)
 
 if __name__ == "__main__":
     main()

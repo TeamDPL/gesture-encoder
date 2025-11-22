@@ -2,32 +2,9 @@
 # -*- coding: utf-8 -*-
 """
 TD-GCN Dual Inference (Mirror + AUTO handedness) with Wrist-World as AUXILIARY embedding (C stays 3)
------------------------------------------------------------------------------------------------
-Context:
-- Available checkpoint: C=3 (xyz only), single-hand dataset.
-- No checkpoint trained with wrist-world in input.
-
-Goal:
-- Keep the encoder input as (C=3) to stay compatible with the existing checkpoint.
-- Still leverage wrist world information by concatenating a compact summary vector of the
-  wrist trajectory to the extracted encoder embedding (late-fusion at embedding-level).
-
-What this script does:
-- Keeps original TD-GCN input: (1,3,T,22,1)
-- Extracts encoder embedding by hooking the last Linear (pre-hook). If not found, uses logits.
-- Computes per-sequence wrist-world normalization: (x/w, y/h, z/max(w,h)) per frame.
-- Builds an AUX vector: concat(mean, std) over time for wrist-world → shape (6,).
-- Final embedding: z_cat = concat([z_encoder, aux_wrist])  # dimension: D + 6
-- Optionally saves embeddings to NPY.
-- 좌표계: 왼손 손목(world)을 전역 원점으로 사용하고, 모든 손 좌표를 그 origin 기준 상대 좌표로 변환.
-- 화면 좌측 상단 HUD에 왼손/오른손 wrist가 왼손에서 얼마나 떨어져 있는지(norm) 표시.
-
-Note:
-- This is late-fusion; classifier/fine-tuning should expect the augmented dim (D+6) if used.
-- For 2-hand streaming, we run the same model twice (Left/Right) with M=1.
 
 Usage:
-  python tdgcn_dual_mirror_wristaux.py \
+  python tdgcn_dual_wrist.py \
     --save-emb out_dir \
     --dump-every 10
 
@@ -39,7 +16,6 @@ import numpy as np
 from collections import deque, Counter
 import cv2, torch
 import torch.nn as nn
-import mediapipe as mp
 
 # ========= 사용자 기본 설정 (필요시 인자 override) =========
 TDGCN_REPO   = os.path.expanduser("./TD-GCN-Gesture")
@@ -60,10 +36,6 @@ CAMERA_INDEX = 0
 FRAME_W, FRAME_H = 1280, 720
 MIN_DET_CONF, MIN_TRK_CONF = 0.5, 0.5
 FONT = cv2.FONT_HERSHEY_SIMPLEX
-
-mp_hands = mp.solutions.hands
-mp_draw = mp.solutions.drawing_utils
-mp_styles = mp.solutions.drawing_styles
 
 # ========= 유틸: MediaPipe 21 → DHG/SHREC 22 매핑 & 정규화 =========
 
@@ -210,6 +182,11 @@ def main():
     cap = cv2.VideoCapture(args.camera)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_W)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_H)
+
+    import mediapipe as mp
+    mp_hands = mp.solutions.hands
+    mp_draw = mp.solutions.drawing_utils
+    mp_styles = mp.solutions.drawing_styles
 
     hands = mp_hands.Hands(
         static_image_mode=False, max_num_hands=2, model_complexity=1,
@@ -383,6 +360,28 @@ def main():
         cap.release()
         cv2.destroyAllWindows()
 
+class TDGCN_Wrist_Encoder(nn.Module):
+    def __init__(self, device):
+        super().__init__()
+        self.model, self.feature_blob, _ = build_tdgcn_and_load(WEIGHTS_PATH, CONFIG_YAML, device)
+        self.device = device
+
+    def forward(self, x, aux):
+        # x: (B, 3, T, 22, 1)
+        # aux: (B, 6)
+        logits = self.model(x)
+        if self.feature_blob["feat"] is not None:
+            enc = self.feature_blob["feat"]
+        else:
+            enc = logits
+        
+        # Ensure shapes match for concat
+        # enc: (B, D)
+        # aux: (B, 6)
+        return torch.cat([enc, aux], dim=1)
+
+def get_encoder(device):
+    return TDGCN_Wrist_Encoder(device)
 
 if __name__ == '__main__':
     main()
