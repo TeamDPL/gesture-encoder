@@ -5,6 +5,7 @@ result/
 tmp_h2o/
 subject1_ego/
 __pycache__/
+wandb/
 gen_mock_data.py
 verify_h2o_loader.py
 test_feature_extraction.py

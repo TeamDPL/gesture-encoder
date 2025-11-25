@@ -1,1 +1,0 @@
-{"train_windows":623,"_timestamp":1.763866868330102e+09,"_runtime":516,"_step":0,"joint_drop_delta_acc":0.15254237288135594,"silhouette_score":-0.056168317794799805,"_wandb":{"runtime":516},"smoothness_ts":0.9778631329536438,"knn_accuracy":0.3615819209039548,"test_seqs":10,"test_windows":177,"train_seqs":37}
