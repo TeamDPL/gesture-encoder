@@ -1,0 +1,1 @@
+{"test_seqs":3,"_step":0,"test_windows":6,"train_seqs":12,"train_windows":24,"knn_accuracy":0.5,"_timestamp":1.763807970976094e+09,"smoothness_ts":0.9216988682746887,"silhouette_score":-0.1146099790930748,"_runtime":29,"joint_drop_delta_acc":0.33333333333333337,"_wandb":{"runtime":29}}

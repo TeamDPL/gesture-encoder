@@ -256,6 +256,8 @@ class TDGCN_Dual_Encoder(nn.Module):
     def __init__(self, device):
         super().__init__()
         self.model, self.feature_blob, _ = build_tdgcn_and_load(WEIGHTS_PATH, CONFIG_YAML, device)
+        # [Efficiency] Remove classifier
+        self.model.fc = nn.Identity()
         self.device = device
 
     def forward(self, x):

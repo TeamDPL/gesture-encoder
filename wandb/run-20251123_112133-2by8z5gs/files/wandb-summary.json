@@ -1,0 +1,1 @@
+{"joint_drop_delta_acc":0.20903954802259883,"silhouette_score":-0.037532854825258255,"test_windows":177,"test_seqs":10,"_timestamp":1.7638654481247628e+09,"train_windows":623,"_wandb":{"runtime":952},"smoothness_ts":0.9602094292640686,"knn_accuracy":0.5084745762711864,"_runtime":952,"train_seqs":37,"_step":0}

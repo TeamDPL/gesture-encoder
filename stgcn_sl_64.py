@@ -297,6 +297,9 @@ class STGCN_SL_64_Encoder(nn.Module):
             def _hook(module, inputs):
                 self.feature_blob["feat"] = inputs[0] # Keep gradient if needed, or detach
             last_linear.register_forward_pre_hook(_hook)
+            
+        # [Efficiency] Remove classifier for pure encoder evaluation
+        self.model.fcn = nn.Identity()
 
     def forward(self, x):
         # x: (B, 3, T, V, 1)

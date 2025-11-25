@@ -41,8 +41,8 @@ FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 def mediapipe21_to_dhg22(xyz21):
     wrist = xyz21[0]
-    mcp_idx = [2, 5, 9, 13, 17]
-    palm_center = (xyz21[[0] + mcp_idx].mean(axis=0))
+    # Palm Center = Midpoint between Wrist(0) and Middle MCP(9)
+    palm_center = (xyz21[0] + xyz21[9]) * 0.5
     thumb  = np.stack([xyz21[2],  xyz21[3],  xyz21[4],  xyz21[1]], axis=0)
     indexf = np.stack([xyz21[5],  xyz21[6],  xyz21[7],  xyz21[8]],  axis=0)
     middle = np.stack([xyz21[9],  xyz21[10], xyz21[11], xyz21[12]], axis=0)
@@ -364,21 +364,31 @@ class TDGCN_Wrist_Encoder(nn.Module):
     def __init__(self, device):
         super().__init__()
         self.model, self.feature_blob, _ = build_tdgcn_and_load(WEIGHTS_PATH, CONFIG_YAML, device)
+        # [Efficiency] Remove classifier
+        self.model.fc = nn.Identity()
         self.device = device
 
-    def forward(self, x, aux):
-        # x: (B, 3, T, 22, 1)
-        # aux: (B, 6)
-        logits = self.model(x)
+    def forward(self, x):
+        # x: (B, 2, 3, T, 22, 1) -> Two hands
+        # Reshape to (B*2, 3, T, 22, 1) to process in batch
+        B, Two, C, T, V, M = x.shape
+        x_flat = x.view(B * Two, C, T, V, M)
+        
+        logits = self.model(x_flat)
         if self.feature_blob["feat"] is not None:
-            enc = self.feature_blob["feat"]
+            enc = self.feature_blob["feat"] # (B*2, 256)
         else:
             enc = logits
+            
+        # Reshape back to (B, 2, 256)
+        enc_dual = enc.view(B, Two, -1)
         
-        # Ensure shapes match for concat
-        # enc: (B, D)
-        # aux: (B, 6)
-        return torch.cat([enc, aux], dim=1)
+        # Concatenate Right and Left -> (B, 512)
+        # Assuming index 0 is Right, 1 is Left (or vice versa, order is preserved)
+        # enc_dual[:, 0] is Hand 1, enc_dual[:, 1] is Hand 2
+        out = enc_dual.view(B, -1) 
+        
+        return out
 
 def get_encoder(device):
     return TDGCN_Wrist_Encoder(device)

@@ -1,0 +1,50 @@
+{
+  "os": "macOS-26.1-arm64-arm-64bit",
+  "python": "CPython 3.12.0",
+  "startedAt": "2025-11-23T02:38:35.964361Z",
+  "args": [
+    "--h2o_root",
+    "subject1_ego",
+    "--model_type",
+    "tdgcn_dual_wrist",
+    "--batch_size",
+    "8",
+    "--seq_len",
+    "64",
+    "--stride",
+    "32",
+    "--k",
+    "1"
+  ],
+  "program": "/Users/tori/Desktop/대학/2025-2/GCCP/gesture/eval_h2o.py",
+  "codePath": "eval_h2o.py",
+  "codePathLocal": "eval_h2o.py",
+  "git": {
+    "remote": "https://github.com/TeamDPL/gesture-encoder.git",
+    "commit": "48830abff46d4e4a7b9e3d8e41870d82ec8447af"
+  },
+  "email": "ysdoh0209@khu.ac.kr",
+  "root": "/Users/tori/Desktop/대학/2025-2/GCCP/gesture",
+  "host": "dotol-ui-MacBookPro.local",
+  "executable": "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3",
+  "cpu_count": 8,
+  "cpu_count_logical": 8,
+  "disk": {
+    "/": {
+      "total": "494384795648",
+      "used": "427089399808"
+    }
+  },
+  "memory": {
+    "total": "17179869184"
+  },
+  "apple": {
+    "name": "Apple M2",
+    "ecpuCores": 4,
+    "pcpuCores": 4,
+    "gpuCores": 10,
+    "memoryGb": 16,
+    "ramTotalBytes": "17179869184"
+  },
+  "writerId": "xg7aodxnfk0z5eawhnl6w8hiyfwogcx1"
+}

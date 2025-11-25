@@ -1,0 +1,12 @@
+{"time":"2025-11-23T11:52:31.028833+09:00","level":"INFO","msg":"stream: starting","core version":"0.23.0"}
+{"time":"2025-11-23T11:52:31.358706+09:00","level":"INFO","msg":"stream: created new stream","id":"aonp209v"}
+{"time":"2025-11-23T11:52:31.358789+09:00","level":"INFO","msg":"handler: started","stream_id":"aonp209v"}
+{"time":"2025-11-23T11:52:31.359058+09:00","level":"INFO","msg":"stream: started","id":"aonp209v"}
+{"time":"2025-11-23T11:52:31.359092+09:00","level":"INFO","msg":"sender: started","stream_id":"aonp209v"}
+{"time":"2025-11-23T11:52:31.359103+09:00","level":"INFO","msg":"writer: started","stream_id":"aonp209v"}
+{"time":"2025-11-23T12:01:09.104398+09:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-11-23T12:01:09.399328+09:00","level":"INFO","msg":"handler: operation stats","stats":{}}
+{"time":"2025-11-23T12:01:09.404693+09:00","level":"INFO","msg":"stream: closing","id":"aonp209v"}
+{"time":"2025-11-23T12:01:09.405047+09:00","level":"INFO","msg":"handler: closed","stream_id":"aonp209v"}
+{"time":"2025-11-23T12:01:09.405321+09:00","level":"INFO","msg":"sender: closed","stream_id":"aonp209v"}
+{"time":"2025-11-23T12:01:09.405339+09:00","level":"INFO","msg":"stream: closed","id":"aonp209v"}

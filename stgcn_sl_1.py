@@ -215,6 +215,9 @@ class STGCN_SL_1_Encoder(nn.Module):
         if last_fc:
             def _hook(module, inputs): self.feature_blob["feat"] = inputs[0]
             last_fc.register_forward_pre_hook(_hook)
+            
+        # [Efficiency] Remove classifier
+        self.model.fcn = nn.Identity()
 
     def forward(self, x):
         # x: (B, 3, 1, V, 1)

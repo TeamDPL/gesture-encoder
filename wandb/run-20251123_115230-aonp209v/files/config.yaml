@@ -1,0 +1,85 @@
+_wandb:
+    value:
+        cli_version: 0.23.0
+        e:
+            inykzf4cboqfgsl3c551p0wth9yneiff:
+                apple:
+                    ecpuCores: 4
+                    gpuCores: 10
+                    memoryGb: 16
+                    name: Apple M2
+                    pcpuCores: 4
+                    ramTotalBytes: "17179869184"
+                args:
+                    - --h2o_root
+                    - subject1_ego
+                    - --model_type
+                    - stgcn_sl_64
+                    - --batch_size
+                    - "8"
+                    - --seq_len
+                    - "64"
+                    - --stride
+                    - "32"
+                    - --k
+                    - "1"
+                codePath: eval_h2o.py
+                codePathLocal: eval_h2o.py
+                cpu_count: 8
+                cpu_count_logical: 8
+                disk:
+                    /:
+                        total: "494384795648"
+                        used: "427085082624"
+                email: ysdoh0209@khu.ac.kr
+                executable: /Library/Frameworks/Python.framework/Versions/3.12/bin/python3
+                git:
+                    commit: 48830abff46d4e4a7b9e3d8e41870d82ec8447af
+                    remote: https://github.com/TeamDPL/gesture-encoder.git
+                host: dotol-ui-MacBookPro.local
+                memory:
+                    total: "17179869184"
+                os: macOS-26.1-arm64-arm-64bit
+                program: /Users/tori/Desktop/대학/2025-2/GCCP/gesture/eval_h2o.py
+                python: CPython 3.12.0
+                root: /Users/tori/Desktop/대학/2025-2/GCCP/gesture
+                startedAt: "2025-11-23T02:52:30.646115Z"
+                writerId: inykzf4cboqfgsl3c551p0wth9yneiff
+        m: []
+        python_version: 3.12.0
+        t:
+            "1":
+                - 1
+                - 5
+                - 53
+                - 105
+            "2":
+                - 1
+                - 5
+                - 53
+                - 105
+            "3":
+                - 2
+                - 13
+                - 16
+                - 62
+            "4": 3.12.0
+            "5": 0.23.0
+            "12": 0.23.0
+            "13": darwin-arm64
+batch_size:
+    value: 8
+device:
+    value: "False"
+drop_prob:
+    value: 0.3
+h2o_root:
+    value: subject1_ego
+k:
+    value: 1
+model_type:
+    value: stgcn_sl_64
+seq_len:
+    value: 64
+stride:
+    value: 32
